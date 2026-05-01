@@ -1,31 +1,40 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_KEY!
+);
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const cid = searchParams.get("cid");
+  try {
+    const { searchParams } = new URL(req.url);
+    const cid = searchParams.get("cid");
 
-  const res = await fetch(
-    `${process.env.SUPABASE_URL}/rest/v1/customers?id=eq.${cid}`,
-    {
-      headers: {
-        apikey: process.env.SUPABASE_KEY!,
-        Authorization: `Bearer ${process.env.SUPABASE_KEY}`,
-      },
+    const { data, error } = await supabase
+      .from("Customers")
+      .select("*")
+      .eq("id", cid)
+      .single();
+
+    if (error) {
+      throw error;
     }
-  );
 
-  const data = await res.json();
+    const stamps = data?.stamps || 0;
+    const reward = stamps >= 5;
 
-  let stamps = 0;
+    return NextResponse.json({
+      success: true,
+      customer_id: cid,
+      stamps,
+      reward,
+    });
 
-  if (data.length > 0) {
-    stamps = data[0].stamps;
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({
-    success: true,
-    customer_id: cid,
-    stamps,
-    reward: stamps >= 5,
-  });
 }
