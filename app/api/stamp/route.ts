@@ -8,7 +8,7 @@ const supabase = createClient(
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const cid = searchParams.get("cid");
+  const cid = searchParams.get("cid") || "";
 
   const { data, error } = await supabase
     .from("Customers")
